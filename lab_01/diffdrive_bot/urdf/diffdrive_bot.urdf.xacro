@@ -179,12 +179,54 @@
     <origin xyz="${chassis_length/2 + 0.015} 0 0" />
   </joint>
 
-  <!-- TODO (exercise Step 1): depth camera on the back face, looking along -x.
-       Add the link depth_camera_link (visual, collision, inertial) and a fixed joint
-       to base_link, turned half a turn about z. -->
+    <!-- Rear depth camera -->
+  <link name="depth_camera_link">
+    <visual>
+      <geometry>
+        <box size="${camera_size}" />
+      </geometry>
+      <material name="blue" />
+    </visual>
 
-  <!-- TODO (exercise Step 1): IMU at the centre of the chassis.
-       Add the link imu_link and a fixed joint to base_link. -->
+    <collision>
+      <geometry>
+        <box size="${camera_size}" />
+      </geometry>
+    </collision>
+
+    <inertial>
+      <mass value="${camera_mass}" />
+      <xacro:box_inertia m="${camera_mass}" x="0.03" y="0.08" z="0.03" />
+    </inertial>
+  </link>
+
+  <joint name="depth_camera_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="depth_camera_link" />
+    <origin
+      xyz="-${chassis_length/2 + 0.015} 0 0"
+      rpy="0 0 3.14159" />
+  </joint>
+
+    <!-- IMU at the centre of the chassis -->
+  <link name="imu_link">
+    <inertial>
+      <mass value="0.001" />
+      <inertia
+        ixx="0.000001"
+        ixy="0.0"
+        ixz="0.0"
+        iyy="0.000001"
+        iyz="0.0"
+        izz="0.000001" />
+    </inertial>
+  </link>
+
+  <joint name="imu_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="imu_link" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
+  </joint>
 
   <!-- Frictionless caster so it slides instead of dragging -->
   <gazebo reference="caster">
@@ -249,14 +291,47 @@
     </sensor>
   </gazebo>
 
-  <!-- TODO (exercise Step 1): Gazebo sensor of type depth_camera for depth_camera_link,
-       publishing on /depth_camera, with its camera_info_topic set to
-       /depth_camera/camera_info -->
+    <!-- Rear depth camera sensor -->
+  <gazebo reference="depth_camera_link">
+    <sensor name="depth_camera" type="depth_camera">
+      <topic>/depth_camera</topic>
+      <gz_frame_id>depth_camera_link</gz_frame_id>
+      <update_rate>10</update_rate>
+      <always_on>true</always_on>
+      <visualize>true</visualize>
 
-  <!-- TODO (exercise Step 1): Gazebo sensor of type imu for imu_link, publishing on /imu -->
+      <camera>
+        <camera_info_topic>/depth_camera/camera_info</camera_info_topic>
+        <horizontal_fov>1.047</horizontal_fov>
+
+        <image>
+          <width>320</width>
+          <height>240</height>
+          <format>R_FLOAT32</format>
+        </image>
+
+        <clip>
+          <near>0.1</near>
+          <far>10.0</far>
+        </clip>
+      </camera>
+    </sensor>
+  </gazebo>
+
+    <!-- IMU sensor -->
+  <gazebo reference="imu_link">
+    <sensor name="imu_sensor" type="imu">
+      <topic>/imu</topic>
+      <gz_frame_id>imu_link</gz_frame_id>
+      <update_rate>50</update_rate>
+      <always_on>true</always_on>
+      <visualize>false</visualize>
+    </sensor>
+  </gazebo>
 
   <!-- Gazebo plugins -->
   <gazebo>
+    <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu" />
     <plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
       <left_joint>left_wheel_joint</left_joint>
       <right_joint>right_wheel_joint</right_joint>
